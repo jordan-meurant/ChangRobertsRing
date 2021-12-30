@@ -14,16 +14,16 @@ suspend fun loadElectionChannels(
     updateResults: suspend (ArrayList<String>, completed: Boolean) -> Unit
 ) {
     coroutineScope {
-        val table = Channel<Message>() // a shared table
+        val ring = Channel<Message>() // a shared table
 
         for (x in 0..numberOfNode) {
             launch(Dispatchers.Default) {
                 log("Création noeud n°$x")
-                node(x, table, updateResults)
+                node(x, ring, updateResults)
             }
         }
         results.add("Début de l'élection")
-        table.send(Message(MsgType.ELECTION, -1, "Début de l'élection")) // send the first message
+        ring.send(Message(MsgType.ELECTION, -1, "Début de l'élection")) // send the first message
     }
 }
 

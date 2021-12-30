@@ -11,7 +11,7 @@ fun createNodes(): MutableList<Node> {
     nodes.add(Node(0, null))
 
     val numbers = ArrayList<Int>()
-    for (x in 1..99) {
+    for (x in 1..59) { // try 5000, you will see a StackOverflowError
         numbers.add(x)
     }
     numbers.shuffle()
@@ -42,7 +42,6 @@ fun forwardMsg(node: Node, msg: Message) {
 }
 
 fun checkMsg(node: Node, msg: Message) {
-    // print(msg.type.toString() + ": ")
     print("Noeud n°" + node.id + ", message reçu : ")
     println(msg)
     if (msg.type == MsgType.ELECTION) {

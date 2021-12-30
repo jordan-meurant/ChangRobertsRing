@@ -10,16 +10,16 @@ enum class MsgType {
 }
 
 fun main() = runBlocking {
-    val table = Channel<Message>() // a shared table
+    val ring = Channel<Message>() // a shared table
 
     for (x in 0..100) {
         launch(Dispatchers.Default) {
             println("Default: I'm working in thread ${Thread.currentThread().name} - Noeud n° $x")
-            node(x, table)
+            node(x, ring)
 
         }
     }
-    table.send(Message(MsgType.ELECTION, -1, "Début de l'élection")) // serve the ball
+    ring.send(Message(MsgType.ELECTION, -1, "Début de l'élection")) // serve the ball
 }
 
 suspend fun node(nodeId: Int, table: Channel<Message>) {
