@@ -22,21 +22,21 @@ fun main() = runBlocking {
     ring.send(Message(MsgType.ELECTION, -1, "Début de l'élection")) // serve the ball
 }
 
-suspend fun node(nodeId: Int, table: Channel<Message>) {
-    for (message in table) {
+suspend fun node(nodeId: Int, ring: Channel<Message>) {
+    for (message in ring) {
         println("Node n°$nodeId  Message reçu : $message")
         delay(300)
 
         if (message.type == MsgType.ELECTION) {
             if (message.idNode > nodeId) {
                 message.text = "$nodeId fait suivre le msg sans MAJ"
-                table.send(message)
+                ring.send(message)
             }
             if (message.idNode < nodeId) {
-                table.send(Message(MsgType.ELECTION, nodeId, "$nodeId transfert le msg avec son propre id"))
+                ring.send(Message(MsgType.ELECTION, nodeId, "$nodeId transfert le msg avec son propre id"))
             }
             if (message.idNode == nodeId) {
-                table.send(
+                ring.send(
                     Message(
                         MsgType.ELECTED,
                         nodeId,
@@ -47,11 +47,11 @@ suspend fun node(nodeId: Int, table: Channel<Message>) {
         } else {
             if (message.idNode == nodeId) {
                 println("Le processus d'élection est terminé ! Le leader est le noeud n°$nodeId")
-                table.cancel()
+                ring.cancel()
             }
             if (message.idNode != nodeId) {
                 message.text = "Le noeud n°$nodeId a reconnu le noeud n°" + message.idNode + " comme leader"
-                table.send(message)
+                ring.send(message)
             }
         }
     }

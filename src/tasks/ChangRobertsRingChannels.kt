@@ -34,10 +34,10 @@ enum class MsgType {
 
 suspend fun node(
     nodeId: Int,
-    table: Channel<Message>,
+    ring: Channel<Message>,
     updateResults: suspend (ArrayList<String>, completed: Boolean) -> Unit
 ) {
-    for (message in table) { // receive the message in the loop
+    for (message in ring) { // receive the message in the loop
         log("Node n°$nodeId")
         results.add("Node n°$nodeId  Message reçu : $message")
         updateResults(results, false)
@@ -46,13 +46,13 @@ suspend fun node(
         if (message.type == MsgType.ELECTION) {
             if (message.idNode > nodeId) {
                 message.text = "$nodeId fait suivre le msg sans MAJ"
-                table.send(message)
+                ring.send(message)
             }
             if (message.idNode < nodeId) {
-                table.send(Message(MsgType.ELECTION, nodeId, "$nodeId transfert le msg avec son propre id"))
+                ring.send(Message(MsgType.ELECTION, nodeId, "$nodeId transfert le msg avec son propre id"))
             }
             if (message.idNode == nodeId) {
-                table.send(
+                ring.send(
                     Message(
                         MsgType.ELECTED,
                         nodeId,
@@ -64,11 +64,11 @@ suspend fun node(
             if (message.idNode == nodeId) {
                 results.add("Le processus d'élection est terminé ! Le leader est le noeud n°$nodeId")
                 updateResults(results, true)
-                table.cancel() // end of algorithm -> cancel channel
+                ring.cancel() // end of algorithm -> cancel channel
             }
             if (message.idNode != nodeId) {
                 message.text = "Le noeud n°$nodeId a reconnu le noeud n°" + message.idNode + " comme leader"
-                table.send(message)
+                ring.send(message)
             }
         }
     }
