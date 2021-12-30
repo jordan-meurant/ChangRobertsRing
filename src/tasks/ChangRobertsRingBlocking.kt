@@ -44,7 +44,7 @@ fun forwardMsg(node: Node, msg: Message, results: ArrayList<String>) {
 
 fun checkMsg(node: Node, msg: Message, results: ArrayList<String>) {
     results.add("Noeud n°" + node.id + ", message reçu : " + msg)
-    sleep(500)
+    sleep(500) // wait a bit so see that the result is shown only once
     if (msg.type == MsgType.ELECTION) {
         if (msg.idNode > node.id) {
             msg.text = node.id.toString() + " fait suivre le msg sans MAJ"
