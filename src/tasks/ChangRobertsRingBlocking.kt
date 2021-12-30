@@ -3,7 +3,7 @@ package tasks
 import elections.log
 import java.lang.Thread.sleep
 
-fun loadContributorsBlocking(numberOfNodes: Int): ArrayList<String> {
+fun loadElectionsBlocking(numberOfNodes: Int): ArrayList<String> {
 
     log("starting election")
     val results = arrayListOf("Début de l'élection")

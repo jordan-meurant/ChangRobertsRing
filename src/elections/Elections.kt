@@ -4,7 +4,7 @@ import elections.Elections.LoadingStatus.*
 import elections.Variant.BLOCKING
 import elections.Variant.CHANNELS
 import kotlinx.coroutines.*
-import tasks.loadContributorsBlocking
+import tasks.loadElectionsBlocking
 import tasks.loadElectionChannels
 import java.awt.event.ActionListener
 import kotlin.coroutines.CoroutineContext
@@ -46,7 +46,7 @@ interface Elections : CoroutineScope {
         val startTime = System.currentTimeMillis()
         when (getSelectedVariant()) {
             BLOCKING -> { // Blocking UI thread
-                val result = loadContributorsBlocking(numberOfNodes)
+                val result = loadElectionsBlocking(numberOfNodes)
                 updateResults(result, startTime)
             }
             CHANNELS -> {  // Performing requests concurrently and showing progress
