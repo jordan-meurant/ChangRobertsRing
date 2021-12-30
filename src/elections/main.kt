@@ -1,8 +1,8 @@
-package contributors
+package elections
 
 fun main() {
     setDefaultFontSize(18f)
-    ContributorsUI().apply {
+    ElectionsUI().apply {
         pack()
         setLocationRelativeTo(null)
         isVisible = true

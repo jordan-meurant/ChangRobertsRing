@@ -1,26 +1,20 @@
-package contributors
+package elections
 
-import contributors.Contributors.LoadingStatus.*
-import contributors.Variant.*
+import elections.Elections.LoadingStatus.*
+import elections.Variant.BLOCKING
+import elections.Variant.CHANNELS
 import kotlinx.coroutines.*
-import kotlinx.coroutines.swing.Swing
-import tasks.*
+import tasks.loadContributorsBlocking
+import tasks.loadElectionChannels
 import java.awt.event.ActionListener
-import javax.swing.SwingUtilities
 import kotlin.coroutines.CoroutineContext
 
 enum class Variant {
-    BLOCKING,         // Request1Blocking
-    BACKGROUND,       // Request2Background
-    CALLBACKS,        // Request3Callbacks
-    SUSPEND,          // Request4Coroutine
-    CONCURRENT,       // Request5Concurrent
-    NOT_CANCELLABLE,  // Request6NotCancellable
-    PROGRESS,         // Request6Progress
-    CHANNELS          // Request7Channels
+    BLOCKING,           // ChangRobertsRingBlocking
+    CHANNELS          // ChangRobertsRingChannels
 }
 
-interface Contributors: CoroutineScope {
+interface Elections : CoroutineScope {
 
     val job: Job
 
@@ -30,14 +24,12 @@ interface Contributors: CoroutineScope {
     fun init() {
         // Start a new loading on 'load' click
         addLoadListener {
-            saveParams()
-            loadContributors()
+            loadElections()
         }
 
         // Save preferences and exit on closing the window
         addOnWindowClosingListener {
             job.cancel()
-            saveParams()
             System.exit(0)
         }
 
@@ -45,65 +37,24 @@ interface Contributors: CoroutineScope {
         loadInitialParams()
     }
 
-    fun loadContributors() {
-        val (username, password, org, _) = getParams()
-        val req = RequestData(username, password, org)
+    fun loadElections() {
+        val (numberOfNodes, _) = getParams()
 
         clearResults()
-        val service = createGitHubService(req.username, req.password)
+        // val service = createGitHubService(req.username, req.password)
 
         val startTime = System.currentTimeMillis()
         when (getSelectedVariant()) {
             BLOCKING -> { // Blocking UI thread
-                val users = loadContributorsBlocking(service, req)
-                updateResults(users, startTime)
-            }
-            BACKGROUND -> { // Blocking a background thread
-                loadContributorsBackground(service, req) { users ->
-                    SwingUtilities.invokeLater {
-                        updateResults(users, startTime)
-                    }
-                }
-            }
-            CALLBACKS -> { // Using callbacks
-                loadContributorsCallbacks(service, req) { users ->
-                    SwingUtilities.invokeLater {
-                        updateResults(users, startTime)
-                    }
-                }
-            }
-            SUSPEND -> { // Using coroutines
-                launch {
-                    val users = loadContributorsSuspend(service, req)
-                    updateResults(users, startTime)
-                }.setUpCancellation()
-            }
-            CONCURRENT -> { // Performing requests concurrently
-                launch {
-                    val users = loadContributorsConcurrent(service, req)
-                    updateResults(users, startTime)
-                }.setUpCancellation()
-            }
-            NOT_CANCELLABLE -> { // Performing requests in a non-cancellable way
-                launch {
-                    val users = loadContributorsNotCancellable(service, req)
-                    updateResults(users, startTime)
-                }.setUpCancellation()
-            }
-            PROGRESS -> { // Showing progress
-                launch(Dispatchers.Default) {
-                    loadContributorsProgress(service, req) { users, completed ->
-                        withContext(Dispatchers.Main) {
-                            updateResults(users, startTime, completed)
-                        }
-                    }
-                }.setUpCancellation()
+                val result = loadContributorsBlocking(numberOfNodes)
+                updateResults(result, startTime)
             }
             CHANNELS -> {  // Performing requests concurrently and showing progress
+                clearResults()
                 launch(Dispatchers.Default) {
-                    loadContributorsChannels(service, req) { users, completed ->
+                    loadElectionChannels(numberOfNodes) { data, completed ->
                         withContext(Dispatchers.Main) {
-                            updateResults(users, startTime, completed)
+                            updateResults(data, startTime, completed)
                         }
                     }
                 }.setUpCancellation()
@@ -114,17 +65,18 @@ interface Contributors: CoroutineScope {
     private enum class LoadingStatus { COMPLETED, CANCELED, IN_PROGRESS }
 
     private fun clearResults() {
-        updateContributors(listOf())
+        updateResult(arrayListOf())
         updateLoadingStatus(IN_PROGRESS)
         setActionsStatus(newLoadingEnabled = false)
     }
 
     private fun updateResults(
-        users: List<User>,
+        result: ArrayList<String>,
         startTime: Long,
         completed: Boolean = true
     ) {
-        updateContributors(users)
+        //updateContributors(users)
+        updateResult(result)
         updateLoadingStatus(if (completed) COMPLETED else IN_PROGRESS, startTime)
         if (completed) {
             setActionsStatus(newLoadingEnabled = true)
@@ -174,19 +126,10 @@ interface Contributors: CoroutineScope {
         setParams(loadStoredParams())
     }
 
-    fun saveParams() {
-        val params = getParams()
-        if (params.username.isEmpty() && params.password.isEmpty()) {
-            removeStoredParams()
-        }
-        else {
-            saveParams(params)
-        }
-    }
 
     fun getSelectedVariant(): Variant
 
-    fun updateContributors(users: List<User>)
+    fun updateResult(result: ArrayList<String>)
 
     fun setLoadingStatus(text: String, iconRunning: Boolean)
 
@@ -203,4 +146,5 @@ interface Contributors: CoroutineScope {
     fun setParams(params: Params)
 
     fun getParams(): Params
+
 }

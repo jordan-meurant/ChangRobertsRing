@@ -1,32 +1,29 @@
-package contributors
+package elections
 
 import kotlinx.coroutines.Job
 import java.awt.Dimension
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Insets
-import java.awt.event.ActionListener
-import java.awt.event.WindowAdapter
-import java.awt.event.WindowEvent
+import java.awt.event.*
 import javax.swing.*
 import javax.swing.table.DefaultTableModel
 
+
 private val INSETS = Insets(3, 10, 3, 10)
-private val COLUMNS = arrayOf("Login", "Contributions")
+private val COLUMNS = arrayOf("Result")
 
 @Suppress("CONFLICTING_INHERITED_JVM_DECLARATIONS")
-class ContributorsUI : JFrame("GitHub Contributors"), Contributors {
-    private val username = JTextField(20)
-    private val password = JPasswordField(20)
-    private val org = JTextField(20)
+class ElectionsUI : JFrame("Chang Roberts ring algorithm"), Elections {
+    private val numberOfNode = JTextField(20)
     private val variant = JComboBox<Variant>(Variant.values())
-    private val load = JButton("Load contributors")
+    private val start = JButton("Start Election")
     private val cancel = JButton("Cancel").apply { isEnabled = false }
 
     private val resultsModel = DefaultTableModel(COLUMNS, 0)
     private val results = JTable(resultsModel)
     private val resultsScroll = JScrollPane(results).apply {
-        preferredSize = Dimension(200, 200)
+        preferredSize = Dimension(1000, 1000)
     }
 
     private val loadingIcon = ImageIcon(javaClass.classLoader.getResource("ajax-loader.gif"))
@@ -37,14 +34,11 @@ class ContributorsUI : JFrame("GitHub Contributors"), Contributors {
     init {
         // Create UI
         rootPane.contentPane = JPanel(GridBagLayout()).apply {
-            addLabeled("GitHub Username", username)
-            addLabeled("Password/Token", password)
-            addWideSeparator()
-            addLabeled("Organization", org)
+            addLabeled("Nombre de noeuds à créer", numberOfNode)
             addLabeled("Variant", variant)
             addWideSeparator()
             addWide(JPanel().apply {
-                add(load)
+                add(start)
                 add(cancel)
             })
             addWide(resultsScroll) {
@@ -54,22 +48,27 @@ class ContributorsUI : JFrame("GitHub Contributors"), Contributors {
             }
             addWide(loadingStatus)
         }
+
+        numberOfNode.addKeyListener(object : KeyAdapter() {
+            override fun keyTyped(e: KeyEvent) {
+                val c = e.keyChar
+                if (!(c in '0'..'9' ||
+                            c.code == KeyEvent.VK_BACK_SPACE ||
+                            c.code == KeyEvent.VK_DELETE)
+                ) {
+                    toolkit.beep()
+                    e.consume()
+                }
+            }
+        })
         // Initialize actions
         init()
     }
 
     override fun getSelectedVariant(): Variant = variant.getItemAt(variant.selectedIndex)
 
-    override fun updateContributors(users: List<User>) {
-        if (users.isNotEmpty()) {
-            log.info("Updating result with ${users.size} rows")
-        }
-        else {
-            log.info("Clearing result")
-        }
-        resultsModel.setDataVector(users.map {
-            arrayOf(it.login, it.contributions)
-        }.toTypedArray(), COLUMNS)
+    override fun updateResult(result: ArrayList<String>) {
+        resultsModel.setDataVector(result.map { arrayOf(it) }.toTypedArray(), COLUMNS)
     }
 
     override fun setLoadingStatus(text: String, iconRunning: Boolean) {
@@ -86,7 +85,7 @@ class ContributorsUI : JFrame("GitHub Contributors"), Contributors {
     }
 
     override fun addLoadListener(listener: () -> Unit) {
-        load.addActionListener { listener() }
+        start.addActionListener { listener() }
     }
 
     override fun addOnWindowClosingListener(listener: () -> Unit) {
@@ -98,19 +97,18 @@ class ContributorsUI : JFrame("GitHub Contributors"), Contributors {
     }
 
     override fun setActionsStatus(newLoadingEnabled: Boolean, cancellationEnabled: Boolean) {
-        load.isEnabled = newLoadingEnabled
+        start.isEnabled = newLoadingEnabled
         cancel.isEnabled = cancellationEnabled
     }
 
     override fun setParams(params: Params) {
-        username.text = params.username
-        password.text = params.password
-        org.text = params.org
+        numberOfNode.text = params.getNumberOfNodes.toString()
         variant.selectedIndex = params.variant.ordinal
     }
 
     override fun getParams(): Params {
-        return Params(username.text, password.password.joinToString(""), org.text, getSelectedVariant())
+
+        return Params(numberOfNode.text.toInt(),getSelectedVariant())
     }
 }
 
